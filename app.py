@@ -14,9 +14,21 @@ st.write(
 st.write("Kallakurichi ↔ Titakudi Private Bus AI Assistant")
 
 # -------------------------
+# CSV Upload Option
+# -------------------------
+uploaded_file = st.file_uploader(
+    "📂 Upload Bus Data CSV File",
+    type=["csv"]
+)
+
+# -------------------------
 # Load Dataset
 # -------------------------
-data = pd.read_csv("data.csv")
+if uploaded_file is not None:
+    data = pd.read_csv(uploaded_file)
+    st.success("✅ Uploaded CSV Loaded Successfully")
+else:
+    data = pd.read_csv("data.csv")
 
 # -------------------------
 # Convert Text to Numbers
@@ -170,3 +182,87 @@ avg_passengers = graph_data.groupby(
 )["passenger_count"].mean()
 
 st.bar_chart(avg_passengers)
+# -------------------------
+# Daily Data Entry Form
+# -------------------------
+st.subheader("📝 Daily Bus Data Entry")
+
+entry_date = st.date_input("Date")
+
+entry_time = st.text_input(
+    "Time (Example: 07:30)"
+)
+
+entry_day = st.selectbox(
+    "Day for Entry",
+    [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+    ]
+)
+
+entry_weather = st.selectbox(
+    "Weather for Entry",
+    ["Sunny", "Cloudy", "Rainy"]
+)
+
+entry_passengers = st.number_input(
+    "Passenger Count",
+    min_value=0,
+    value=30
+)
+
+entry_fuel = st.number_input(
+    "Fuel Used (Liters)",
+    min_value=0.0,
+    value=8.0
+)
+
+entry_trip_time = st.number_input(
+    "Trip Time (Minutes)",
+    min_value=1,
+    value=60
+)
+
+entry_delay = st.number_input(
+    "Delay (Minutes)",
+    min_value=0,
+    value=0
+)
+
+# Save Button
+if st.button("💾 Save Daily Data"):
+
+    new_entry = {
+        "date": str(entry_date),
+        "time": entry_time,
+        "day": entry_day,
+        "weather": entry_weather,
+        "passenger_count": entry_passengers,
+        "fuel_used_liters": entry_fuel,
+        "trip_time_minutes": entry_trip_time,
+        "delay_minutes": entry_delay
+    }
+
+    # Add new row
+    new_data = pd.DataFrame([new_entry])
+
+    updated_data = pd.concat(
+        [data, new_data],
+        ignore_index=True
+    )
+
+    # Save to CSV
+    updated_data.to_csv(
+        "data.csv",
+        index=False
+    )
+
+    st.success(
+        "✅ Daily Bus Data Saved Successfully!"
+    )
