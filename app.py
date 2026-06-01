@@ -3,53 +3,77 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 
 # ==================================================
-# LOGIN SYSTEM
+# CENTER LOGIN SYSTEM
 # ==================================================
 USER_CREDENTIALS = {
     "driver": "1234",
     "admin": "admin123"
 }
 
-st.sidebar.title("🔐 Login")
-
-username = st.sidebar.text_input("Username")
-password = st.sidebar.text_input(
-    "Password",
-    type="password"
-)
-
-login_button = st.sidebar.button(
-    "Login"
-)
-
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_role = ""
 
-if login_button:
-
-    if (
-        username in USER_CREDENTIALS
-        and USER_CREDENTIALS[username]
-        == password
-    ):
-
-        st.session_state.logged_in = True
-        st.session_state.user_role = username
-
-        st.sidebar.success(
-            f"✅ Welcome {username}"
-        )
-
-    else:
-        st.sidebar.error(
-            "❌ Invalid Login"
-        )
-
 if not st.session_state.logged_in:
-    st.warning(
-        "🔐 Please login to continue"
+
+    st.markdown(
+        """
+        <h1 style='text-align:center;
+        color:#D71920;'>
+        🚍 AI Smart Bus Route Analytics
+        </h1>
+        """,
+        unsafe_allow_html=True
     )
+
+    col1, col2, col3 = st.columns([1,2,1])
+
+    with col2:
+
+        st.markdown("## 🔐 Login")
+
+        st.info("""
+👤 Driver Login  
+Username: driver  
+Password: 1234
+
+👤 Admin Login  
+Username: admin  
+Password: admin123
+""")
+
+        username = st.text_input(
+            "Username"
+        )
+
+        password = st.text_input(
+            "Password",
+            type="password"
+        )
+
+        if st.button("Login"):
+
+            if (
+                username in USER_CREDENTIALS
+                and USER_CREDENTIALS[
+                    username
+                ] == password
+            ):
+
+                st.session_state.logged_in = True
+                st.session_state.user_role = username
+
+                st.success(
+                    f"✅ Welcome {username}"
+                )
+
+                st.rerun()
+
+            else:
+                st.error(
+                    "❌ Invalid Login"
+                )
+
     st.stop()
 
 user_role = st.session_state.user_role
@@ -653,39 +677,6 @@ if user_role == "admin":
     if total_passengers < 100:
         st.success(
             "🟢 Passenger crowd normal."
-        )
-        # AI Health
-        st.subheader(
-            "🚨 AI Bus Health & Alerts"
-        )
-
-        total_passengers = data[
-            "passenger_count"
-        ].sum()
-
-        avg_delay = round(
-            data["delay_minutes"].mean(),
-            2
-        )
-
-        avg_fuel = round(
-            data[
-                "fuel_used_liters"
-            ].mean(),
-            2
-        )
-
-        health_score = 100
-
-        if avg_delay > 10:
-            health_score -= 20
-
-        if avg_fuel > 9:
-            health_score -= 20
-
-        st.metric(
-            "🚍 Route Health Score",
-            f"{health_score}/100"
         )
 
 # ==================================================
