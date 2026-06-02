@@ -1,224 +1,91 @@
 # 🚍 AI Smart Bus Route Analytics & Driver Assistance System
 
-## 📌 Project Overview
+An AI-powered transportation analytics platform developed using Python, Streamlit, Machine Learning, and Data Analytics.
 
-AI Smart Bus Route Analytics & Driver Assistance System is a machine learning-based web application developed using Streamlit and Random Forest Regression. The system helps private bus operators predict passenger crowd levels, travel delays, traffic risks, fuel efficiency, and route performance.
+## Features
 
-The project is designed for the **Kallakurichi ↔ Titakudi Private Bus Route** and provides separate dashboards for **Admin** and **Driver** users.
+### 🔐 Role-Based Login System
 
----
-
-## ✨ Features
-
-### 🔐 Login System
-
-* Driver Login
 * Admin Login
-* Secure role-based access
+* Driver Login
+* Secure Session Management
+* Logout Functionality
 
-### 👨‍✈️ Driver Dashboard
+### 🤖 AI Passenger Prediction
 
-Drivers can:
+* Predict Passenger Crowd
+* Crowd Level Classification
+* Peak Demand Analysis
 
-* Enter daily trip details
-* Record passenger count
-* Record fuel consumption
-* Record trip time
-* Record delays
-* Save data directly into CSV
+### ⏰ Delay Prediction
 
-### 👨‍💼 Admin Dashboard
-
-Admins can:
-
-* Predict passenger crowd using AI
-* Predict travel delays
-* Analyze fuel consumption
-* Monitor route performance
-* Download analytics reports
-
-### 🤖 AI Predictions
-
-Machine Learning models predict:
-
-* Expected Passenger Count
-* Expected Delay Time
-
-Using:
-
-* Day of Week
-* Weather Condition
-* Trip Duration
+* Travel Delay Forecasting
+* Delay Risk Assessment
 
 ### 🚦 Traffic Risk Prediction
 
-Traffic risk levels:
+* Low Risk
+* Medium Risk
+* High Risk
 
-* 🟢 Low Risk
-* 🟡 Medium Risk
-* 🔴 High Risk
+### ⛽ Fuel Analytics
 
-Based on:
-
-* Predicted Delay
-* Weather Conditions
+* Fuel Usage Analysis
+* Fuel Efficiency Monitoring
+* Maintenance Recommendations
 
 ### 📊 Analytics Dashboard
 
-* Monthly Passenger Statistics
-* Average Delay Analysis
-* Fuel Consumption Analysis
-* Peak Crowd Day Detection
+* Passenger Analytics
+* Monthly Analytics Dashboard
+* Average Delay by Day
+* Fuel Usage Analytics
 * Route Health Score
 
-### 🚨 AI Alerts
+### 🚨 AI Smart Alerts
 
-Automatic alerts for:
+* Delay Alerts
+* Fuel Alerts
+* Passenger Demand Alerts
 
-* High Delay
-* High Fuel Consumption
-* High Passenger Demand
-* Route Performance Issues
+### 📂 Data Management
 
----
+* CSV Upload
+* Driver Daily Data Entry
+* Auto Dataset Update
 
-## 🛠️ Technologies Used
+### 📄 Reporting System
+
+* CSV Analytics Export
+* Professional PDF Report Generation
+
+## Technologies Used
 
 * Python
 * Streamlit
 * Pandas
 * Scikit-Learn
 * Random Forest Regressor
-* CSV Dataset Storage
+* ReportLab
 
----
+## Machine Learning Models
 
-## 📂 Project Structure
+1. Passenger Crowd Prediction Model
+2. Delay Prediction Model
 
-```text
-AI-Smart-Bus-Analytics/
-│
-├── app.py                 # Streamlit Web Application
-├── main.py                # AI Prediction Console Program
-├── data.csv               # Dataset
-├── requirements.txt       # Required Libraries
-└── README.md
-```
+## Project Outcome
 
----
+The system helps private bus operators analyze passenger demand, predict delays, monitor route performance, and generate professional reports for operational decision-making.
 
-## 📈 Machine Learning Model
+## Future Enhancements
 
-Algorithm Used:
-
-**Random Forest Regressor**
-
-Input Features:
-
-* Day
-* Weather
-* Trip Time (Minutes)
-
-Output Predictions:
-
-* Passenger Count
-* Delay Minutes
-
----
-
-## 🚀 Installation
-
-### Clone Repository
-
-```bash
-git clone https://github.com/yourusername/AI-Smart-Bus-Analytics.git
-cd AI-Smart-Bus-Analytics
-```
-
-### Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### Run Streamlit App
-
-```bash
-streamlit run app.py
-```
-
-### Run Console Version
-
-```bash
-python main.py
-```
-
----
-
-## 🔑 Default Login Credentials
-
-### Driver
-
-Username:
-
-```text
-driver
-```
-
-Password:
-
-```text
-1234
-```
-
-### Admin
-
-Username:
-
-```text
-admin
-```
-
-Password:
-
-```text
-admin123
-```
-
----
-
-## 📊 Sample Dataset Columns
-
-```text
-date
-time
-day
-weather
-passenger_count
-fuel_used_liters
-trip_time_minutes
-delay_minutes
-```
-
----
-
-## 🎯 Future Enhancements
-
-* Real-Time GPS Tracking
-* Google Maps Integration
-* Live Traffic API
-* Fuel Cost Prediction
-* Passenger Demand Forecasting
+* Live Weather API Integration
+* Google Maps Route Visualization
+* Driver Activity Logs
+* Admin Password Management
 * Cloud Database Integration
-* Mobile Application Support
-* Advanced AI Models
 
----
+## Author
 
-## 👨‍💻 Developed By
-
-aspiring python AI/ML developer
-
-AI Smart Bus Route Analytics & Driver Assistance System
-
-Using Machine Learning and Streamlit
+Praveen M
+AI & Data Analytics Enthusiast
