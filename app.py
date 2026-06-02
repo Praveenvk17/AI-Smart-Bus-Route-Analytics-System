@@ -1,92 +1,87 @@
+import os
+from io import BytesIO
+from datetime import datetime
+
+import requests
 import streamlit as st
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+
 
 # ==================================================
-# CENTER LOGIN SYSTEM
+# PAGE CONFIG
 # ==================================================
-USER_CREDENTIALS = {
-    "driver": "1234",
-    "admin": "admin123"
-}
+st.set_page_config(
+    page_title="AI Smart Bus Analytics",
+    page_icon="🚍",
+    layout="wide"
+)
 
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-    st.session_state.user_role = ""
 
-if not st.session_state.logged_in:
+# ==================================================
+# FILES
+# ==================================================
+USER_FILE = "users.csv"
+LOG_FILE = "driver_logs.csv"
 
-    st.markdown(
-        """
-        <h1 style='text-align:center;
-        color:#D71920;'>
-        🚍 AI Smart Bus Route Analytics
-        </h1>
-        """,
-        unsafe_allow_html=True
+
+# ==================================================
+# DEFAULT USERS
+# ==================================================
+def create_default_users():
+    if not os.path.exists(USER_FILE):
+        users = pd.DataFrame(
+            [
+                {
+                    "username": "system_admin",
+                    "password": "admin123",
+                    "role": "admin"
+                },
+                {
+                    "username": "driver_user",
+                    "password": "1234",
+                    "role": "driver"
+                }
+            ]
+        )
+        users.to_csv(USER_FILE, index=False)
+
+
+def load_users():
+    create_default_users()
+    return pd.read_csv(USER_FILE)
+
+
+def save_users(users):
+    users.to_csv(USER_FILE, index=False)
+
+
+def save_driver_log(username, action):
+    log_data = pd.DataFrame(
+        [
+            {
+                "timestamp": datetime.now().strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                ),
+                "username": username,
+                "action": action
+            }
+        ]
     )
 
-    col1, col2, col3 = st.columns([1,2,1])
-
-    with col2:
-
-        st.markdown("## 🔐 Login")
-
-        st.info("""
-👤 Driver Login  
-Username: driver  
-Password: 1234
-
-👤 Admin Login  
-Username: admin  
-Password: admin123
-""")
-
-        username = st.text_input(
-            "Username"
+    if os.path.exists(LOG_FILE):
+        old_logs = pd.read_csv(LOG_FILE)
+        logs = pd.concat(
+            [old_logs, log_data],
+            ignore_index=True
         )
+    else:
+        logs = log_data
 
-        password = st.text_input(
-            "Password",
-            type="password"
-        )
+    logs.to_csv(LOG_FILE, index=False)
 
-        if st.button("Login"):
-
-            if (
-                username in USER_CREDENTIALS
-                and USER_CREDENTIALS[
-                    username
-                ] == password
-            ):
-
-                st.session_state.logged_in = True
-                st.session_state.user_role = username
-
-                st.success(
-                    f"✅ Welcome {username}"
-                )
-
-                st.rerun()
-
-            else:
-                st.error(
-                    "❌ Invalid Login"
-                )
-
-    st.stop()
-
-user_role = st.session_state.user_role
-
-# ==================================================
-# LOGOUT BUTTON
-# ==================================================
-if st.sidebar.button("🚪 Logout"):
-
-    st.session_state.logged_in = False
-    st.session_state.user_role = ""
-
-    st.rerun()
 
 # ==================================================
 # PREMIUM RCB STYLE THEME
@@ -94,14 +89,11 @@ if st.sidebar.button("🚪 Logout"):
 st.markdown(
     """
     <style>
-
-    /* Main Background */
     .stApp {
         background: #0d0d0d;
         color: #ffffff;
     }
 
-    /* Title */
     h1 {
         color: #D71920;
         text-align: center;
@@ -110,19 +102,16 @@ st.markdown(
         letter-spacing: 1px;
     }
 
-    /* Headings */
     h2, h3 {
         color: #C9A227;
         font-weight: 700;
     }
 
-    /* Sidebar */
     section[data-testid="stSidebar"] {
         background: #141414;
         border-right: 2px solid #D71920;
     }
 
-    /* Buttons */
     .stButton > button {
         background: #D71920;
         color: white;
@@ -140,18 +129,14 @@ st.markdown(
         transition: 0.3s;
     }
 
-    /* Metric Cards */
     div[data-testid="metric-container"] {
         background: #1b1b1b;
         border: 1px solid #C9A227;
         border-radius: 16px;
         padding: 16px;
-        box-shadow: 0px 0px 10px rgba(
-            215, 25, 32, 0.3
-        );
+        box-shadow: 0px 0px 10px rgba(215, 25, 32, 0.3);
     }
 
-    /* Input Boxes */
     .stTextInput input,
     .stNumberInput input,
     .stSelectbox div {
@@ -161,17 +146,91 @@ st.markdown(
         border-radius: 10px;
     }
 
-    /* Upload Box */
     section[data-testid="stFileUploader"] {
         border: 2px dashed #D71920;
         border-radius: 12px;
         padding: 10px;
     }
-
     </style>
     """,
     unsafe_allow_html=True
 )
+
+
+# ==================================================
+# CENTER LOGIN SYSTEM
+# ==================================================
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+    st.session_state.user_role = ""
+    st.session_state.username = ""
+
+if not st.session_state.logged_in:
+
+    st.markdown(
+        """
+        <h1 style='text-align:center;color:#D71920;'>
+        🚍 AI Smart Bus Route Analytics
+        </h1>
+        """,
+        unsafe_allow_html=True
+    )
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+
+    with col2:
+        st.markdown("## 🔐 Secure Login")
+        st.info(
+            "Authorized users only. Please enter your credentials."
+        )
+
+        username = st.text_input("Username")
+        password = st.text_input(
+            "Password",
+            type="password"
+        )
+
+        if st.button("Login"):
+            users = load_users()
+
+            matched_user = users[
+                (users["username"] == username)
+                & (users["password"] == password)
+            ]
+
+            if len(matched_user) > 0:
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.session_state.user_role = (
+                    matched_user.iloc[0]["role"]
+                )
+
+                st.success("✅ Login successful")
+                st.rerun()
+
+            else:
+                st.error("❌ Invalid username or password")
+
+    st.stop()
+
+user_role = st.session_state.user_role
+logged_username = st.session_state.username
+
+
+# ==================================================
+# LOGOUT BUTTON
+# ==================================================
+st.sidebar.success(
+    f"Logged in as: {logged_username}"
+)
+
+if st.sidebar.button("🚪 Logout"):
+    st.session_state.logged_in = False
+    st.session_state.user_role = ""
+    st.session_state.username = ""
+    st.rerun()
+
+
 # ==================================================
 # PAGE TITLE
 # ==================================================
@@ -180,12 +239,13 @@ st.title(
 )
 
 st.write(
-    "AI-powered system to predict passenger crowd and travel delay"
+    "AI-powered system to predict passenger crowd, delay, fuel usage, traffic risk, and route health."
 )
 
 st.write(
     "Kallakurichi ↔ Titakudi Private Bus AI Assistant"
 )
+
 
 # ==================================================
 # LOAD CSV
@@ -198,19 +258,37 @@ uploaded_file = st.file_uploader(
 try:
     if uploaded_file is not None:
         data = pd.read_csv(uploaded_file)
-        st.success(
-            "✅ Uploaded CSV Loaded Successfully"
-        )
+        st.success("✅ Uploaded CSV Loaded Successfully")
     else:
-        data = pd.read_csv(
-            "data.csv"
-        )
+        data = pd.read_csv("data.csv")
 
 except Exception as e:
+    st.error(f"❌ Error loading CSV: {e}")
+    st.stop()
+
+
+required_columns = [
+    "date",
+    "time",
+    "day",
+    "weather",
+    "passenger_count",
+    "fuel_used_liters",
+    "trip_time_minutes",
+    "delay_minutes"
+]
+
+missing_columns = [
+    col for col in required_columns
+    if col not in data.columns
+]
+
+if missing_columns:
     st.error(
-        f"❌ Error loading CSV: {e}"
+        f"❌ Missing columns in CSV: {missing_columns}"
     )
     st.stop()
+
 
 # ==================================================
 # DAY & WEATHER MAPPING
@@ -231,33 +309,42 @@ weather_mapping = {
     "Rainy": 3
 }
 
+day_order = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday"
+]
+
+
 # ==================================================
-# PREPARE DATA FOR ML
+# PREPARE DATA
 # ==================================================
+data["day"] = (
+    data["day"]
+    .astype(str)
+    .str.strip()
+    .str.title()
+)
+
+data["weather"] = (
+    data["weather"]
+    .astype(str)
+    .str.strip()
+    .str.title()
+)
+
 model_data = data.copy()
 
-model_data["day"] = (
-    model_data["day"]
-    .astype(str)
-    .str.strip()
-    .str.title()
+model_data["day"] = model_data["day"].map(
+    day_mapping
 )
 
-model_data["weather"] = (
-    model_data["weather"]
-    .astype(str)
-    .str.strip()
-    .str.title()
-)
-
-model_data["day"] = (
-    model_data["day"]
-    .map(day_mapping)
-)
-
-model_data["weather"] = (
-    model_data["weather"]
-    .map(weather_mapping)
+model_data["weather"] = model_data["weather"].map(
+    weather_mapping
 )
 
 model_data = model_data.dropna(
@@ -265,115 +352,220 @@ model_data = model_data.dropna(
 )
 
 if len(model_data) == 0:
-    st.error(
-        "❌ No valid data found."
-    )
+    st.error("❌ No valid data found.")
     st.stop()
 
+
 # ==================================================
-# TRAIN MODEL
+# TRAIN MODELS
 # ==================================================
 X = model_data[
-    [
-        "day",
-        "weather",
-        "trip_time_minutes"
-    ]
+    ["day", "weather", "trip_time_minutes"]
 ]
 
-y = model_data[
-    "passenger_count"
-]
+y = model_data["passenger_count"]
 
-model = RandomForestRegressor(
+passenger_model = RandomForestRegressor(
     n_estimators=100,
     random_state=42
 )
 
-model.fit(X, y)
+passenger_model.fit(X, y)
+
 
 X_delay = model_data[
-    [
-        "day",
-        "weather",
-        "trip_time_minutes"
-    ]
+    ["day", "weather", "trip_time_minutes"]
 ]
 
-y_delay = model_data[
-    "delay_minutes"
-]
+y_delay = model_data["delay_minutes"]
 
 delay_model = RandomForestRegressor(
     n_estimators=100,
     random_state=42
 )
 
-delay_model.fit(
-    X_delay,
-    y_delay
-)
+delay_model.fit(X_delay, y_delay)
+
+
+# ==================================================
+# LIVE WEATHER API
+# ==================================================
+def get_live_weather():
+    try:
+        # Kallakurichi approximate coordinates
+        latitude = 11.7404
+        longitude = 78.9597
+
+        url = (
+            "https://api.open-meteo.com/v1/forecast"
+            f"?latitude={latitude}"
+            f"&longitude={longitude}"
+            "&current_weather=true"
+        )
+
+        response = requests.get(
+            url,
+            timeout=10
+        )
+
+        result = response.json()
+        weather_data = result.get(
+            "current_weather",
+            {}
+        )
+
+        temperature = weather_data.get(
+            "temperature",
+            "N/A"
+        )
+
+        windspeed = weather_data.get(
+            "windspeed",
+            "N/A"
+        )
+
+        return temperature, windspeed
+
+    except Exception:
+        return "N/A", "N/A"
+
+
+# ==================================================
+# PDF REPORT FUNCTION
+# ==================================================
+def generate_pdf_report(
+    total_passengers,
+    avg_delay,
+    avg_fuel,
+    highest_day,
+    health_score,
+    health_status
+):
+    buffer = BytesIO()
+
+    pdf = canvas.Canvas(
+        buffer,
+        pagesize=letter
+    )
+
+    pdf.setFont(
+        "Helvetica-Bold",
+        16
+    )
+
+    pdf.drawString(
+        50,
+        750,
+        "AI Smart Bus Route Analytics Report"
+    )
+
+    pdf.setFont(
+        "Helvetica",
+        11
+    )
+
+    pdf.drawString(
+        50,
+        720,
+        "Route: Kallakurichi to Titakudi"
+    )
+
+    pdf.drawString(
+        50,
+        690,
+        f"Total Passengers: {total_passengers}"
+    )
+
+    pdf.drawString(
+        50,
+        670,
+        f"Average Delay: {avg_delay} minutes"
+    )
+
+    pdf.drawString(
+        50,
+        650,
+        f"Average Fuel Usage: {avg_fuel} liters"
+    )
+
+    pdf.drawString(
+        50,
+        630,
+        f"Peak Crowd Day: {highest_day}"
+    )
+
+    pdf.drawString(
+        50,
+        610,
+        f"Route Health Score: {health_score}/100"
+    )
+
+    pdf.drawString(
+        50,
+        590,
+        f"Health Status: {health_status}"
+    )
+
+    pdf.drawString(
+        50,
+        550,
+        "Generated by AI Smart Bus Route Analytics System"
+    )
+
+    pdf.save()
+    buffer.seek(0)
+
+    return buffer
+
 
 # ==================================================
 # ADMIN ACCESS
 # ==================================================
 if user_role == "admin":
 
-    st.subheader(
-        "🚌 Enter Trip Details"
-    )
+    st.subheader("🚌 Enter Trip Details for Analytics")
 
-    day = st.selectbox(
-        "Select Day",
-        list(day_mapping.keys())
-    )
+    col1, col2 = st.columns(2)
 
-    weather = st.selectbox(
-        "Select Weather",
-        list(weather_mapping.keys())
-    )
+    with col1:
+        day = st.selectbox(
+            "Select Day",
+            list(day_mapping.keys())
+        )
 
-    trip_time = st.number_input(
-        "Trip Time (minutes)",
-        min_value=1,
-        value=60
-    )
+        weather = st.selectbox(
+            "Select Weather",
+            list(weather_mapping.keys())
+        )
 
-    fuel_used = st.number_input(
-        "Fuel Used (liters)",
-        min_value=1.0,
-        value=8.0
-    )
+    with col2:
+        trip_time = st.number_input(
+            "Trip Time (minutes)",
+            min_value=1,
+            value=60
+        )
 
-    if st.button(
-        "🚍 Predict Bus Analytics"
-    ):
+        fuel_used = st.number_input(
+            "Fuel Used (liters)",
+            min_value=1.0,
+            value=8.0
+        )
+
+    if st.button("🚍 Predict Bus Analytics"):
 
         day_num = day_mapping[day]
-        weather_num = weather_mapping[
-            weather
-        ]
+        weather_num = weather_mapping[weather]
 
-        prediction = model.predict(
-            [[
-                day_num,
-                weather_num,
-                trip_time
-            ]]
+        prediction = passenger_model.predict(
+            [[day_num, weather_num, trip_time]]
         )
 
         predicted_passengers = round(
             prediction[0]
         )
 
-        delay_prediction = (
-            delay_model.predict(
-                [[
-                    day_num,
-                    weather_num,
-                    trip_time
-                ]]
-            )
+        delay_prediction = delay_model.predict(
+            [[day_num, weather_num, trip_time]]
         )
 
         predicted_delay = round(
@@ -388,21 +580,16 @@ if user_role == "admin":
             f"⏰ Expected Delay: {predicted_delay} mins"
         )
 
-        # AI Suggestions
-        st.subheader(
-            "🤖 AI Smart Suggestions"
-        )
+        st.subheader("🤖 AI Smart Suggestions")
 
         if predicted_passengers > 50:
             st.warning(
                 "🚍 High crowd expected. Consider extra trip."
             )
-
         elif predicted_passengers > 30:
             st.info(
                 "🟡 Moderate crowd expected."
             )
-
         else:
             st.success(
                 "🟢 Low crowd expected."
@@ -412,12 +599,10 @@ if user_role == "admin":
             st.warning(
                 "⏰ High delay expected. Start earlier."
             )
-
         elif predicted_delay > 5:
             st.info(
                 "🟡 Moderate delay possible."
             )
-
         else:
             st.success(
                 "✅ Trip likely on time."
@@ -427,101 +612,100 @@ if user_role == "admin":
             st.warning(
                 "⛽ Fuel usage high. Maintenance recommended."
             )
-
         elif fuel_used > 7:
             st.info(
                 "🟡 Fuel usage normal."
             )
-
         else:
             st.success(
                 "✅ Fuel efficient."
             )
-        # ==================================================
-        # TRAFFIC RISK PREDICTION
-        # ==================================================
-        st.subheader(
-            "🚦 Traffic Risk Prediction"
-        )
 
-        if (
-            predicted_delay > 15
-            or weather == "Rainy"
-        ):
-            st.error(
-                "🔴 High Traffic Risk"
-            )
+        st.subheader("🚦 Traffic Risk Prediction")
 
+        if predicted_delay > 15 or weather == "Rainy":
+            st.error("🔴 High Traffic Risk")
         elif predicted_delay > 5:
-            st.warning(
-                "🟡 Medium Traffic Risk"
-            )
-
+            st.warning("🟡 Medium Traffic Risk")
         else:
-            st.success(
-                "🟢 Low Traffic Risk"
-            )
+            st.success("🟢 Low Traffic Risk")
 
-        # ==================================================
-        # DOWNLOAD ANALYTICS REPORT
-        # ==================================================
-        st.subheader(
-            "📥 Download Analytics Report"
-        )
-
-        csv = data.to_csv(
-            index=False
-        ).encode("utf-8")
-
-        st.download_button(
-            label="📂 Download Report CSV",
-            data=csv,
-            file_name=
-            "bus_analytics_report.csv",
-            mime="text/csv"
-        )
-        # Analytics
-        st.subheader(
-            "📊 Passenger Analytics"
-        )
-
-        avg_passengers = (
-            data.groupby("day")[
-                "passenger_count"
-            ]
-            .mean()
-        )
-
-        st.bar_chart(
-            avg_passengers
-        )
-        # ==================================================
-    # MONTHLY ANALYTICS DASHBOARD
     # ==================================================
-    st.subheader(
-        "📈 Monthly Analytics Dashboard"
+    # LIVE WEATHER
+    # ==================================================
+    st.subheader("🌦️ Live Weather Update")
+
+    temperature, windspeed = get_live_weather()
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric(
+            "🌡️ Temperature",
+            f"{temperature} °C"
+        )
+
+    with col2:
+        st.metric(
+            "💨 Wind Speed",
+            f"{windspeed} km/h"
+        )
+
+    # ==================================================
+    # GOOGLE MAPS ROUTE VISUALIZATION
+    # ==================================================
+    st.subheader("🗺️ Route Map: Kallakurichi → Titakudi")
+
+    google_map_html = """
+    <iframe
+        width="100%"
+        height="420"
+        style="border:0; border-radius:15px;"
+        loading="lazy"
+        allowfullscreen
+        src="https://www.google.com/maps?q=Kallakurichi%20to%20Titakudi&output=embed">
+    </iframe>
+    """
+
+    st.markdown(
+        google_map_html,
+        unsafe_allow_html=True
     )
 
-    # Total Passengers
-    total_passengers = data[
-        "passenger_count"
-    ].sum()
+    # ==================================================
+    # PASSENGER ANALYTICS
+    # ==================================================
+    st.subheader("📊 Passenger Analytics")
 
-    # Average Delay
+    avg_passengers = (
+        data.groupby("day")[
+            "passenger_count"
+        ]
+        .mean()
+        .reindex(day_order)
+    )
+
+    st.bar_chart(avg_passengers)
+
+    # ==================================================
+    # MONTHLY ANALYTICS DASHBOARD
+    # ==================================================
+    st.subheader("📈 Monthly Analytics Dashboard")
+
+    total_passengers = int(
+        data["passenger_count"].sum()
+    )
+
     avg_delay = round(
         data["delay_minutes"].mean(),
         2
     )
 
-    # Average Fuel Usage
     avg_fuel = round(
-        data[
-            "fuel_used_liters"
-        ].mean(),
+        data["fuel_used_liters"].mean(),
         2
     )
 
-    # Highest Crowd Day
     highest_day = (
         data.groupby("day")[
             "passenger_count"
@@ -530,7 +714,6 @@ if user_role == "admin":
         .idxmax()
     )
 
-    # Dashboard Metrics
     col1, col2 = st.columns(2)
 
     with col1:
@@ -558,90 +741,59 @@ if user_role == "admin":
     # ==================================================
     # DELAY ANALYTICS
     # ==================================================
-    st.subheader(
-        "⏰ Average Delay by Day"
-    )
+    st.subheader("⏰ Average Delay by Day")
 
     delay_chart = (
         data.groupby("day")[
             "delay_minutes"
         ]
         .mean()
+        .reindex(day_order)
     )
 
-    day_order = [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday"
-    ]
-
-    delay_chart = (
-        delay_chart.reindex(
-            day_order
-        )
-    )
-
-    st.line_chart(
-        delay_chart
-    )
+    st.line_chart(delay_chart)
 
     # ==================================================
     # FUEL ANALYTICS
     # ==================================================
-    st.subheader(
-        "⛽ Fuel Usage Analytics"
-    )
+    st.subheader("⛽ Fuel Usage Analytics")
 
     fuel_chart = (
         data.groupby("day")[
             "fuel_used_liters"
         ]
         .mean()
+        .reindex(day_order)
     )
 
-    fuel_chart = (
-        fuel_chart.reindex(
-            day_order
-        )
-    )
-
-    st.bar_chart(
-        fuel_chart
-    )
+    st.bar_chart(fuel_chart)
 
     # ==================================================
     # AI BUS HEALTH & ALERTS
     # ==================================================
-    st.subheader(
-        "🚨 AI Bus Health & Alerts"
-    )
+    st.subheader("🚨 AI Bus Health & Alerts")
 
     health_score = 100
 
-    if avg_delay > 10:
-        health_score -= 20
-
-    if avg_fuel > 9:
-        health_score -= 20
-
-    if total_passengers < 30:
+    if avg_delay > 15:
+        health_score -= 25
+    elif avg_delay > 5:
         health_score -= 10
 
-    # Health Status
+    if avg_fuel > 10:
+        health_score -= 25
+    elif avg_fuel > 7:
+        health_score -= 10
+
+    if total_passengers < 50:
+        health_score -= 15
+
     if health_score >= 80:
         health_status = "🟢 Good"
-
     elif health_score >= 60:
         health_status = "🟡 Moderate"
-
     else:
-        health_status = (
-            "🔴 Needs Attention"
-        )
+        health_status = "🔴 Needs Attention"
 
     st.metric(
         "🚍 Route Health Score",
@@ -652,12 +804,7 @@ if user_role == "admin":
         f"Status: {health_status}"
     )
 
-    # ==================================================
-    # AI ALERTS
-    # ==================================================
-    st.subheader(
-        "🤖 AI Alerts"
-    )
+    st.subheader("🤖 AI Alerts")
 
     if avg_delay > 10:
         st.warning(
@@ -679,26 +826,123 @@ if user_role == "admin":
             "🟢 Passenger crowd normal."
         )
 
+    # ==================================================
+    # DOWNLOAD REPORTS
+    # ==================================================
+    st.subheader("📥 Download Analytics Reports")
+
+    csv = data.to_csv(
+        index=False
+    ).encode("utf-8")
+
+    st.download_button(
+        label="📂 Download CSV Report",
+        data=csv,
+        file_name="bus_analytics_report.csv",
+        mime="text/csv"
+    )
+
+    pdf_report = generate_pdf_report(
+        total_passengers,
+        avg_delay,
+        avg_fuel,
+        highest_day,
+        health_score,
+        health_status
+    )
+
+    st.download_button(
+        label="📄 Download PDF Report",
+        data=pdf_report,
+        file_name="bus_analytics_report.pdf",
+        mime="application/pdf"
+    )
+
+    # ==================================================
+    # ADMIN PASSWORD CHANGE
+    # ==================================================
+    st.subheader("🔐 Admin Password Change")
+
+    with st.expander("Change Admin Password"):
+        old_password = st.text_input(
+            "Current Password",
+            type="password"
+        )
+
+        new_password = st.text_input(
+            "New Password",
+            type="password"
+        )
+
+        confirm_password = st.text_input(
+            "Confirm New Password",
+            type="password"
+        )
+
+        if st.button("Update Password"):
+            users = load_users()
+
+            current_user = users[
+                users["username"] == logged_username
+            ]
+
+            if len(current_user) == 0:
+                st.error("❌ User not found")
+
+            elif (
+                current_user.iloc[0]["password"]
+                != old_password
+            ):
+                st.error("❌ Current password is wrong")
+
+            elif new_password != confirm_password:
+                st.error("❌ Passwords do not match")
+
+            elif len(new_password) < 4:
+                st.warning(
+                    "⚠️ Password must be at least 4 characters"
+                )
+
+            else:
+                users.loc[
+                    users["username"] == logged_username,
+                    "password"
+                ] = new_password
+
+                save_users(users)
+
+                st.success(
+                    "✅ Password updated successfully. Please logout and login again."
+                )
+
+    # ==================================================
+    # DRIVER ACTIVITY LOGS
+    # ==================================================
+    st.subheader("📋 Driver Activity Logs")
+
+    if os.path.exists(LOG_FILE):
+        logs = pd.read_csv(LOG_FILE)
+        st.dataframe(
+            logs.tail(20),
+            use_container_width=True
+        )
+    else:
+        st.info("No driver activity logs found yet.")
+
+
 # ==================================================
 # DRIVER ACCESS
 # ==================================================
 elif user_role == "driver":
 
-    st.subheader(
-        "👨‍✈️ Driver Dashboard"
-    )
+    st.subheader("👨‍✈️ Driver Dashboard")
 
     st.info(
         "Driver can only enter daily data."
     )
 
-    entry_date = st.date_input(
-        "Date"
-    )
-
-    entry_time = st.text_input(
-        "Time"
-    )
+    entry_date = st.date_input("Date")
+    entry_time = st.text_input("Time")
 
     entry_day = st.selectbox(
         "Day",
@@ -734,31 +978,23 @@ elif user_role == "driver":
         value=0
     )
 
-    if st.button(
-        "💾 Save Daily Data"
-    ):
+    if st.button("💾 Save Daily Data"):
 
         new_entry = {
             "date": str(entry_date),
             "time": entry_time,
             "day": entry_day,
             "weather": entry_weather,
-            "passenger_count":
-                entry_passengers,
-            "fuel_used_liters":
-                entry_fuel,
-            "trip_time_minutes":
-                entry_trip_time,
-            "delay_minutes":
-                entry_delay
+            "passenger_count": entry_passengers,
+            "fuel_used_liters": entry_fuel,
+            "trip_time_minutes": entry_trip_time,
+            "delay_minutes": entry_delay
         }
 
         updated_data = pd.concat(
             [
                 data,
-                pd.DataFrame(
-                    [new_entry]
-                )
+                pd.DataFrame([new_entry])
             ],
             ignore_index=True
         )
@@ -766,6 +1002,11 @@ elif user_role == "driver":
         updated_data.to_csv(
             "data.csv",
             index=False
+        )
+
+        save_driver_log(
+            logged_username,
+            "Daily bus data saved"
         )
 
         st.success(
